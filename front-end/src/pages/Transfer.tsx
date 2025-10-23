@@ -185,6 +185,10 @@ export default function Transfer() {
                   />
                 </div>
 
+                <textarea id="description" className="description-input">
+                </textarea>
+
+
                 <div className="mb-4">
                   <label htmlFor="amount" className="form-label fw-bold">Amount ($)</label>
                   <input
