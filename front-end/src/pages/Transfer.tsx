@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import { CreditCard, Send } from 'lucide-react';
+import WalletAPI from '../api/walletAPI';
 
 interface Card {
-  id: string;
-  card_number: string;
-  card_holder_name: string;
-  balance: number;
+  wallet_id: string;
+  wallet_number: string;
+  validity_period: string;
+  budget: number;
+  cvv: number;
 }
 
 export default function Transfer() {
@@ -14,7 +15,6 @@ export default function Transfer() {
   const [selectedCard, setSelectedCard] = useState<string>('');
   const [recipientCardNumber, setRecipientCardNumber] = useState('');
   const [amount, setAmount] = useState('');
-  const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -23,114 +23,111 @@ export default function Transfer() {
   }, []);
 
   const fetchCards = async () => {
-    const { data, error } = await supabase
-      .from('cards')
-      .select('id, card_number, card_holder_name, balance');
-
-    if (error) {
-      console.error('Error fetching cards:', error);
-    } else {
-      setCards(data || []);
+    try {
+      const data = await WalletAPI.getWallets(1);
+      setCards(data.walletArray || []);
+    } catch (e) {
+      console.log(e);
     }
   };
 
   const handleTransfer = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage(null);
+    // e.preventDefault();
+    // setLoading(true);
+    // setMessage(null);
 
-    const transferAmount = parseFloat(amount);
-    if (isNaN(transferAmount) || transferAmount <= 0) {
-      setMessage({ type: 'error', text: 'Please enter a valid amount' });
-      setLoading(false);
-      return;
-    }
+    // const transferAmount = parseFloat(amount);
+    // if (isNaN(transferAmount) || transferAmount <= 0) {
+    //   setMessage({ type: 'error', text: 'Please enter a valid amount' });
+    //   setLoading(false);
+    //   return;
+    // }
 
-    const senderCard = cards.find(c => c.id === selectedCard);
-    if (!senderCard) {
-      setMessage({ type: 'error', text: 'Please select a card' });
-      setLoading(false);
-      return;
-    }
+    // const senderCard = cards.find(c => c.id === selectedCard);
+    // if (!senderCard) {
+    //   setMessage({ type: 'error', text: 'Please select a card' });
+    //   setLoading(false);
+    //   return;
+    // }
 
-    if (senderCard.balance < transferAmount) {
-      setMessage({ type: 'error', text: 'Insufficient balance' });
-      setLoading(false);
-      return;
-    }
+    // if (senderCard.balance < transferAmount) {
+    //   setMessage({ type: 'error', text: 'Insufficient balance' });
+    //   setLoading(false);
+    //   return;
+    // }
 
-    const { data: recipientCard, error: recipientError } = await supabase
-      .from('cards')
-      .select('id, card_number')
-      .eq('card_number', recipientCardNumber.replace(/\s/g, ''))
-      .maybeSingle();
+    // const { data: recipientCard, error: recipientError } = await supabase
+    //   .from('cards')
+    //   .select('id, card_number')
+    //   .eq('card_number', recipientCardNumber.replace(/\s/g, ''))
+    //   .maybeSingle();
 
-    if (recipientError || !recipientCard) {
-      setMessage({ type: 'error', text: 'Recipient card not found' });
-      setLoading(false);
-      return;
-    }
+    // if (recipientError || !recipientCard) {
+    //   setMessage({ type: 'error', text: 'Recipient card not found' });
+    //   setLoading(false);
+    //   return;
+    // }
 
-    if (recipientCard.id === selectedCard) {
-      setMessage({ type: 'error', text: 'Cannot transfer to the same card' });
-      setLoading(false);
-      return;
-    }
+    // if (recipientCard.id === selectedCard) {
+    //   setMessage({ type: 'error', text: 'Cannot transfer to the same card' });
+    //   setLoading(false);
+    //   return;
+    // }
 
-    const { error: deductError } = await supabase
-      .from('cards')
-      .update({ balance: senderCard.balance - transferAmount })
-      .eq('id', selectedCard);
+    // const { error: deductError } = await supabase
+    //   .from('cards')
+    //   .update({ balance: senderCard.balance - transferAmount })
+    //   .eq('id', selectedCard);
 
-    if (deductError) {
-      setMessage({ type: 'error', text: 'Transfer failed. Please try again.' });
-      setLoading(false);
-      return;
-    }
+    // if (deductError) {
+    //   setMessage({ type: 'error', text: 'Transfer failed. Please try again.' });
+    //   setLoading(false);
+    //   return;
+    // }
 
-    const { data: currentRecipientCard } = await supabase
-      .from('cards')
-      .select('balance')
-      .eq('id', recipientCard.id)
-      .single();
+    // const { data: currentRecipientCard } = await supabase
+    //   .from('cards')
+    //   .select('balance')
+    //   .eq('id', recipientCard.id)
+    //   .single();
 
-    const { error: addError } = await supabase
-      .from('cards')
-      .update({ balance: (currentRecipientCard?.balance || 0) + transferAmount })
-      .eq('id', recipientCard.id);
+    // const { error: addError } = await supabase
+    //   .from('cards')
+    //   .update({ balance: (currentRecipientCard?.balance || 0) + transferAmount })
+    //   .eq('id', recipientCard.id);
 
-    if (addError) {
-      await supabase
-        .from('cards')
-        .update({ balance: senderCard.balance })
-        .eq('id', selectedCard);
-      setMessage({ type: 'error', text: 'Transfer failed. Please try again.' });
-      setLoading(false);
-      return;
-    }
+    // if (addError) {
+    //   await supabase
+    //     .from('cards')
+    //     .update({ balance: senderCard.balance })
+    //     .eq('id', selectedCard);
+    //   setMessage({ type: 'error', text: 'Transfer failed. Please try again.' });
+    //   setLoading(false);
+    //   return;
+    // }
 
-    const { error: transactionError } = await supabase
-      .from('transactions')
-      .insert({
-        from_card_id: selectedCard,
-        to_card_number: recipientCardNumber.replace(/\s/g, ''),
-        amount: transferAmount,
-        description
-      });
+    // const { error: transactionError } = await supabase
+    //   .from('transactions')
+    //   .insert({
+    //     from_card_id: selectedCard,
+    //     to_card_number: recipientCardNumber.replace(/\s/g, ''),
+    //     amount: transferAmount,
+    //     description
+    //   });
 
-    if (transactionError) {
-      console.error('Error logging transaction:', transactionError);
-    }
+    // if (transactionError) {
+    //   console.error('Error logging transaction:', transactionError);
+    // }
 
-    setMessage({ type: 'success', text: `Successfully transferred $${transferAmount.toFixed(2)}` });
-    setRecipientCardNumber('');
-    setAmount('');
-    setDescription('');
-    fetchCards();
-    setLoading(false);
+    // setMessage({ type: 'success', text: `Successfully transferred $${transferAmount.toFixed(2)}` });
+    // setRecipientCardNumber('');
+    // setAmount('');
+    // setDescription('');
+    // fetchCards();
+    // setLoading(false);
   };
 
-  const selectedCardData = cards.find(c => c.id === selectedCard);
+  const selectedCardData = cards.find(c => c.wallet_id === selectedCard);
 
   return (
     <div className="container py-5">
@@ -163,14 +160,14 @@ export default function Transfer() {
                   >
                     <option value="">Select your card</option>
                     {cards.map(card => (
-                      <option key={card.id} value={card.id}>
-                        {card.card_number} - Balance: ${card.balance.toFixed(2)}
+                      <option key={card.wallet_id} value={card.wallet_id}>
+                        {card.wallet_number} - Balance: ${card.budget.toFixed(2)}
                       </option>
                     ))}
                   </select>
                   {selectedCardData && (
                     <div className="mt-2 text-muted">
-                      <small>Available balance: ${selectedCardData.balance.toFixed(2)}</small>
+                      <small>Available balance: ${selectedCardData.budget.toFixed(2)}</small>
                     </div>
                   )}
                 </div>
@@ -201,18 +198,6 @@ export default function Transfer() {
                     onChange={(e) => setAmount(e.target.value)}
                     required
                   />
-                </div>
-
-                <div className="mb-4">
-                  <label htmlFor="description" className="form-label fw-bold">Description (Optional)</label>
-                  <textarea
-                    id="description"
-                    className="form-control"
-                    rows={3}
-                    placeholder="Enter transaction description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                  ></textarea>
                 </div>
 
                 <button
